@@ -1,0 +1,13 @@
+{
+    "name": "tarkik/rada-voiting",
+    "type": "library",
+    "require": {
+        "sunra/php-simple-html-dom-parser": "^1.5"
+    },
+    "authors": [
+        {
+            "name": "Tarkik",
+            "email": "prokop.romanski@gmail.com"
+        }
+    ]
+}
