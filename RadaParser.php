@@ -35,7 +35,6 @@ class RadaParser
     }
     
     public function parsingAll( $count = 50 ) {
-        header('Content-Type: text/html; charset=utf-8');
         
         $dom = HtmlDomParser::file_get_html( 'http://rada.gov.ua/news/hpz8' );
         $pages = $dom->find('[href^="http://iportal.rada.gov.ua/news/hpz8/page/"]');
@@ -46,8 +45,9 @@ class RadaParser
         $page = 1;
         $id = 1;
         
-        $items = '{ "vote_events":[';
+        $items = [];
         $votes = [];
+        $bils = [];
         
         do {
             
@@ -85,6 +85,21 @@ class RadaParser
         } while ( $page <= $pageCount && count( $vote_events ) < $count );
    
         foreach( $vote_events as $item ) {
+            
+            preg_match('/(№\d+)/', $item['title'], $oficialId);
+            $oficialId = substr($oficialId[0], 3);
+            $bilUrl = 'http://w1.c1.rada.gov.ua/pls/zweb2/webproc4_2?id=&pf3516='. $oficialId .'&skl=9';
+            $bils =  HtmlDomParser::file_get_html( $bilUrl );
+            $bilTitle = $bils->find('.information_block_ins h3');
+            
+            
+            $bils = [
+                'official_id' => $oficialId,
+                'title' => mb_convert_encoding($bilTitle[1]->innertext, "UTF-8", "CP1251"),
+                'url' => $bilUrl,
+                'vote_event_id' => $item['vote_event_id']
+            ];
+            
             $votesPage = HtmlDomParser::file_get_html( $item['sourse_url'] );
             
             $fractions = $votesPage->find('#01 .fr > li');
@@ -143,8 +158,10 @@ class RadaParser
     
         
         
-        $items = array( 'vote_events' => $vote_events, 'votes' => $votes );
-        var_dump( $items );
+        $items = array( 'vote_events' => $vote_events, 'votes' => $votes, 'bils' => $bils );
+        
+        
+        return $items;
     }
     
     private function ukrainianDateParser( $dateString, $format ) {
