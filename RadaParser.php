@@ -47,7 +47,7 @@ class RadaParser
         
         $items = [];
         $votes = [];
-        $bils = [];
+        $bills = [];
         
         do {
             
@@ -86,14 +86,14 @@ class RadaParser
    
         foreach( $vote_events as $item ) {
             
-            preg_match('/(№\d+)/', $item['title'], $oficialId);
-            $oficialId = substr($oficialId[0], 3);
+            preg_match('/(\(№\d+)/', $item['title'], $oficialId);
+            $oficialId = substr($oficialId[0], 4);
             $bilUrl = 'http://w1.c1.rada.gov.ua/pls/zweb2/webproc4_2?id=&pf3516='. $oficialId .'&skl=9';
             $bils =  HtmlDomParser::file_get_html( $bilUrl );
             $bilTitle = $bils->find('.information_block_ins h3');
             
             
-            $bils = [
+            $bills[] = [
                 'official_id' => $oficialId,
                 'title' => mb_convert_encoding($bilTitle[1]->innertext, "UTF-8", "CP1251"),
                 'url' => $bilUrl,
@@ -158,7 +158,7 @@ class RadaParser
     
         
         
-        $items = array( 'vote_events' => $vote_events, 'votes' => $votes, 'bils' => $bils );
+        $items = array( 'vote_events' => $vote_events, 'votes' => $votes, 'bills' => $bills );
         
         
         return $items;
