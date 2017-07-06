@@ -1,3 +1,4 @@
+
 <?php 
 
 require_once __DIR__.'/vendor/autoload.php';
@@ -45,6 +46,8 @@ class RadaParser
         $id = 1;
         
         $items = [];
+        $votes = [];
+        $bills = [];
         
         do {
             
@@ -72,44 +75,93 @@ class RadaParser
                         'result' => $result=='Прийнято'?'accepted':'not accepted'
                     ];
                     
+                    
                 
                 if ( count( $vote_events ) >= $count ){
                     break;
                 }
             }
                 
-        } while ( $page <= $pageCount && count( $vote_events ) <= $count );
-        /*
+        } while ( $page <= $pageCount && count( $vote_events ) < $count );
+   
         foreach( $vote_events as $item ) {
             
+            preg_match('/(\(№\d+)/', $item['title'], $oficialId);
+            $oficialId = substr($oficialId[0], 4);
+            $bilUrl = 'http://w1.c1.rada.gov.ua/pls/zweb2/webproc4_2?id=&pf3516='. $oficialId .'&skl=9';
+            $bils =  HtmlDomParser::file_get_html( $bilUrl );
+            $bilTitle = $bils->find('.information_block_ins h3');
+            
+            
+            $bills[] = [
+                'official_id' => $oficialId,
+                'title' => mb_convert_encoding($bilTitle[1]->innertext, "UTF-8", "CP1251"),
+                'url' => $bilUrl,
+                'vote_event_id' => $item['vote_event_id']
+            ];
+            
             $votesPage = HtmlDomParser::file_get_html( $item['sourse_url'] );
-            $fractions = $votesPage->find('.fr li');
             
-            var_dump($votesPage);
-                die();
+            $fractions = $votesPage->find('#01 .fr > li');
             
-            foreach ( $fractions as $fr ) {
+            foreach ( $fractions as $k => $fr ) {
                 
-                $frBlock = HtmlDomParser::str_get_html( $fr->tag );
-                $fractionName = $frBlock->find('b');
+                $frBlock = HtmlDomParser::str_get_html( $fr->innertext );
+                $fractionName = $frBlock->find('.frn b');
+                $deputatsNames = $frBlock->find('.frd .dep');
+                $deputatsVotes = $frBlock->find('.frd .golos');
+                
+                
+                foreach( $deputatsNames as $k => $dep ) {
+                    switch (mb_convert_encoding($deputatsVotes[$k]->plaintext, "UTF-8", "CP1251")) {
+                        case 'За':
+                            $option = 'aye';
+                            break;
+                        case 'Проти':
+                            $option = 'no';
+                            break;
+                        case 'Утримався':
+                            $option = 'abstention';
+                            break;
+                        case 'Відсутній':
+                            $option = 'nil';
+                            break;
+                        case 'Утрималась':
+                            $option = 'abstention';
+                            break;
+                        case 'Відсутня':
+                            $option = 'nil';
+                            break;
+                        default:
+                            $option = 'not voting';
+                            break;
+                    }
+                    
+                    $votes[] =
+                    [
+                        'vote_event_id' => $item['vote_event_id'],
+                        'voter' => mb_convert_encoding($dep->plaintext, "UTF-8", "CP1251"),
+                        'option' => $option,
+                        'group_id' => mb_convert_encoding($fractionName[0]->plaintext, "UTF-8", "CP1251")
+                    ];
+                    
+                    
+                }
+                
+                
                 
             }
             
-            $votes = [
-                'vote_event_id' => $item['vote_event_id'],
-                'voter' => 'voter',
-                'option' => 'yes',
-                'group_id' => 'party'
-            ];
-        }*/
+            
+        }
+    
+    
         
-        $items = [ 
-            'vote_events' => $vote_events
-        ];
         
-        $items = json_encode($items);
+        $items = array( 'vote_events' => $vote_events, 'votes' => $votes, 'bills' => $bills );
         
-        echo $items;
+        
+        return $items;
     }
     
     private function ukrainianDateParser( $dateString, $format ) {
