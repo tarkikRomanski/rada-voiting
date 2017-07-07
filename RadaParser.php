@@ -115,22 +115,22 @@ class RadaParser
                 foreach( $deputatsNames as $k => $dep ) {
                     switch (mb_convert_encoding($deputatsVotes[$k]->plaintext, "UTF-8", "CP1251")) {
                         case 'За':
-                            $option = 'aye';
+                            $option = 'yes';
                             break;
                         case 'Проти':
                             $option = 'no';
                             break;
                         case 'Утримався':
-                            $option = 'abstention';
+                            $option = 'abstain';
                             break;
                         case 'Відсутній':
-                            $option = 'nil';
+                            $option = 'not voting';
                             break;
                         case 'Утрималась':
-                            $option = 'abstention';
+                            $option = 'abstain';
                             break;
                         case 'Відсутня':
-                            $option = 'nil';
+                            $option = 'not voting';
                             break;
                         default:
                             $option = 'not voting';
